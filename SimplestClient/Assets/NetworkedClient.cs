@@ -29,6 +29,8 @@ public class NetworkedClient : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.S))
             SendMessageToHost("Hello from client");
 
+        if (Input.GetKeyDown(KeyCode.D))
+            Disconnect();
         UpdateNetworkConnection();
     }
 
@@ -99,12 +101,13 @@ public class NetworkedClient : MonoBehaviour
     public void SendMessageToHost(string msg)
     {
         byte[] buffer = Encoding.Unicode.GetBytes(msg);
-        NetworkTransport.Send(hostID, connectionID, reliableChannelID, buffer, msg.Length * sizeof(char), out error);
+       bool a = NetworkTransport.Send(hostID, connectionID, reliableChannelID, buffer, msg.Length * sizeof(char), out error);
+        Debug.Log(a);
     }
 
     private void ProcessRecievedMsg(string msg, int id)
     {
-        Debug.Log("msg recieved = " + msg + ".  connection id = " + id);
+        Debug.Log("msg received = " + msg + ".  connection id = " + id);
     }
 
     public bool IsConnected()
