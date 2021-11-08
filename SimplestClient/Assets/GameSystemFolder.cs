@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class GameSystemFolder : MonoBehaviour
 {
     
-    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, ticTacToeButton;
+    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, titleText, ticTacToeButton;
     bool isNewUser = false;
 
     // Start is called before the first frame update
@@ -29,6 +29,8 @@ public class GameSystemFolder : MonoBehaviour
                 gameRoomButton = go;
             else if(go.name == "NetworkClient")
                 ConnectionToHost = go;
+            else if(go.name == "Panel Title")
+                titleText = go;
             else if(go.name == "TicTacToeSquare")
                 ticTacToeButton = go;
         }
@@ -64,6 +66,10 @@ public class GameSystemFolder : MonoBehaviour
     public void NewUserTogglePressed(bool newValue)
     {
         isNewUser = newValue;
+        if(isNewUser)
+            titleText.GetComponent<Text>().text = "Create Account";
+        else
+             titleText.GetComponent<Text>().text = "Login";
     }
 
     private void GameRoomButtonPressed()
