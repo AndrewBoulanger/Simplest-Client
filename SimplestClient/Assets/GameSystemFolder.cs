@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class GameSystemFolder : MonoBehaviour
 {
     
-    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, titleText, ticTacToeWindow, logInWindow;
+    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, observerButton, titleText, ticTacToeWindow, logInWindow;
     bool isNewUser = false;
 
     // Start is called before the first frame update
@@ -35,6 +35,8 @@ public class GameSystemFolder : MonoBehaviour
                 ticTacToeWindow = go;
             else if(go.name == "Log In Window")
                 logInWindow = go;
+            else if(go.name == "Observer Button")
+                observerButton = go;
         }
 
         submitButton.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
@@ -93,6 +95,7 @@ public class GameSystemFolder : MonoBehaviour
         toggle.SetActive(false);
         gameRoomButton.SetActive(false);
         titleText.SetActive(false);
+        observerButton.SetActive(false);
 
         ticTacToeWindow.SetActive(false);
         logInWindow.SetActive(false);
@@ -109,12 +112,12 @@ public class GameSystemFolder : MonoBehaviour
         else if(state == GameStates.MainMenu)
         {
             logInWindow.SetActive(true);
+            observerButton.SetActive(true);
             gameRoomButton.SetActive(true);
         }
         else if (state == GameStates.WaitingInQueueForOtherPlayer)
         {
             logInWindow.SetActive(true);
-            gameRoomButton.SetActive(false);
         }
         else if(state == GameStates.TicTacToe)
         {

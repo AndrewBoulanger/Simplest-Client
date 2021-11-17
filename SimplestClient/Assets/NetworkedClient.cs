@@ -130,6 +130,7 @@ public class NetworkedClient : MonoBehaviour
         else if(signifier == ServerToClientSignifiers.GameStart)
         {
             gameSystemManager.GetComponent<GameSystemFolder>().ChangeState(GameStates.TicTacToe);
+            ticTacToeManager.GetComponent<TicTacToeManager>().SetRoomNumberText(csv[1]);
         }
         else if(signifier == ServerToClientSignifiers.ChosenAsPlayerOne)
         {

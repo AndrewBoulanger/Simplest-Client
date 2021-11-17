@@ -6,7 +6,7 @@ using System;
 
 public class TicTacToeManager : MonoBehaviour
 {
-    GameObject playerSymbolText,opponentSymbolText, turnIndicatorText, characterSelectionPanel, xButton, oButton;
+    GameObject playerSymbolText,opponentSymbolText, turnIndicatorText, characterSelectionPanel, xButton, oButton, roomNumberText;
 
     NetworkedClient connectionToHost;
     
@@ -44,6 +44,8 @@ public class TicTacToeManager : MonoBehaviour
                 xButton = go;
             else if(go.name == "O Button")
                 oButton = go;
+            else if(go.name == "RoomNumberText")
+                roomNumberText = go;
         }
 
 
@@ -204,6 +206,11 @@ public class TicTacToeManager : MonoBehaviour
             connectionToHost.SendMessageToHost(ClientToServerSignifiers.GameTied + "");
             OnGameOver("No squares left. You tied");
         }
+    }
+
+    public void SetRoomNumberText(string roomNumber)
+    {
+        roomNumberText.GetComponent<Text>().text = "Room: " + roomNumber;
     }
 
 }
