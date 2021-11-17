@@ -17,7 +17,7 @@ public class NetworkedClient : MonoBehaviour
     bool isConnected = false;
     int ourClientID;
 
-    GameObject gameSystemManager, ticTacToeManager;
+    GameObject gameSystemManager, ticTacToeManager, chatBox;
 
 
     // Start is called before the first frame update
@@ -31,6 +31,8 @@ public class NetworkedClient : MonoBehaviour
                 gameSystemManager = go;
             if(go.GetComponent<TicTacToeManager>() != null)
                 ticTacToeManager = go;
+            if(go.GetComponent<ChatBoxBehaviour>() != null)
+                chatBox = go;
         }
 
         Connect();
@@ -148,6 +150,10 @@ public class NetworkedClient : MonoBehaviour
         else if(signifier == ServerToClientSignifiers.GameTied)
         {
             ticTacToeManager.GetComponent<TicTacToeManager>().OnGameOver("No squares left. You tied");
+        }
+        else if(signifier == ServerToClientSignifiers.ChatLogMessage)
+        {
+            chatBox.GetComponent<ChatBoxBehaviour>().AddChatMessage(csv[1], false);
         }
     }
 

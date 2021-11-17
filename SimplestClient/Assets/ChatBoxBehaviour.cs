@@ -19,10 +19,11 @@ public class ChatBoxBehaviour : MonoBehaviour
 
     public void AddChatMessage(string msg, bool fromPlayer)
     {
-        //start at the top and copy the textbox below itself
+        //start at the top and copy the text box below itself
         for(int i = textLines.Count -1; i > 0; i--)
         {
-            textLines[i] = textLines[i-1];
+            textLines[i].text = textLines[i-1].text;
+            textLines[i].alignment = textLines[i-1].alignment;
         }
         textLines[0].text = msg;
 
@@ -38,7 +39,7 @@ public class ChatBoxBehaviour : MonoBehaviour
 
     void SendChatMessageToServer(string msg)
     {
-        connectionToClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.ChatLogMessage + msg);
+        connectionToClient.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.ChatLogMessage + "," + msg);
     }
 
     public void OnPrefabMessagePressed(string msg)
@@ -51,7 +52,10 @@ public class ChatBoxBehaviour : MonoBehaviour
     {
         InputField input = inputField.GetComponent<InputField>();
         string msg = input.textComponent.text;
-        input.textComponent.text = "";
+        if(msg == "")
+            return;
+
+        input.text = "";
 
         AddChatMessage(msg, true);
         SendChatMessageToServer(msg);
