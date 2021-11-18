@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameSystemFolder : MonoBehaviour
+public class GameSystemManager : MonoBehaviour
 {
     
-    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, observerButton, titleText, ticTacToeWindow, logInWindow;
+    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, observerButton, titleText, ticTacToeWindow, logInWindow, roomNumInput ;
     bool isNewUser = false;
 
     // Start is called before the first frame update
@@ -37,11 +37,14 @@ public class GameSystemFolder : MonoBehaviour
                 logInWindow = go;
             else if(go.name == "Observer Button")
                 observerButton = go;
+            else if(go.name == "RoomNumInputField")
+                roomNumInput = go;
         }
 
         submitButton.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
         gameRoomButton.GetComponent<Button>().onClick.AddListener(GameRoomButtonPressed);
         toggle.GetComponent<Toggle>().onValueChanged.AddListener(NewUserTogglePressed);
+        observerButton.GetComponent<Button>().onClick.AddListener(GameRoomAsObserverButtonPressed);
 
         ChangeState(GameStates.LoginMenu);
     }
@@ -82,9 +85,21 @@ public class GameSystemFolder : MonoBehaviour
         ChangeState(GameStates.WaitingInQueueForOtherPlayer);
     }
 
-    private void TicTacToeButtonPressed()
+    private void GameRoomAsObserverButtonPressed()
     {
-        
+        InputField input = roomNumInput.GetComponent<InputField>();
+        string roomNum = input.textComponent.text;
+
+        if(roomNum == "")
+        {
+            ConnectionToHost.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.JoinAnyRoomAsObserver + "");
+        }
+        else if(int.TryParse(roomNum, out int temp))
+        {
+            ConnectionToHost.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.JoinSpecificRoomAsObserver + "," + roomNum);
+        }
+
+        input.text = "";
     }
 
     public void ChangeState(int state)
@@ -96,6 +111,7 @@ public class GameSystemFolder : MonoBehaviour
         gameRoomButton.SetActive(false);
         titleText.SetActive(false);
         observerButton.SetActive(false);
+        roomNumInput.SetActive(false);
 
         ticTacToeWindow.SetActive(false);
         logInWindow.SetActive(false);
@@ -114,6 +130,7 @@ public class GameSystemFolder : MonoBehaviour
             logInWindow.SetActive(true);
             observerButton.SetActive(true);
             gameRoomButton.SetActive(true);
+            roomNumInput.SetActive(true);
         }
         else if (state == GameStates.WaitingInQueueForOtherPlayer)
         {

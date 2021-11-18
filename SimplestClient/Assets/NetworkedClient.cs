@@ -27,7 +27,7 @@ public class NetworkedClient : MonoBehaviour
 
         foreach(GameObject go in allObjects)
         {
-            if(go.GetComponent<GameSystemFolder>() != null)
+            if(go.GetComponent<GameSystemManager>() != null)
                 gameSystemManager = go;
             if(go.GetComponent<TicTacToeManager>() != null)
                 ticTacToeManager = go;
@@ -125,11 +125,12 @@ public class NetworkedClient : MonoBehaviour
 
         if(signifier == ServerToClientSignifiers.AccountCreated || signifier == ServerToClientSignifiers.LoginComplete)
         {
-            gameSystemManager.GetComponent<GameSystemFolder>().ChangeState(GameStates.MainMenu);
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeState(GameStates.MainMenu);
         }
         else if(signifier == ServerToClientSignifiers.GameStart)
         {
-            gameSystemManager.GetComponent<GameSystemFolder>().ChangeState(GameStates.TicTacToe);
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeState(GameStates.TicTacToe);
+            ticTacToeManager.GetComponent<TicTacToeManager>().ChangeState(TicTacToeStates.StartingGame);
             ticTacToeManager.GetComponent<TicTacToeManager>().SetRoomNumberText(csv[1]);
         }
         else if(signifier == ServerToClientSignifiers.ChosenAsPlayerOne)
@@ -140,21 +141,28 @@ public class NetworkedClient : MonoBehaviour
         {
             ticTacToeManager.GetComponent<TicTacToeManager>().OpponentTookTurn(int.Parse(csv[1]));
         }
-        else if(signifier == ServerToClientSignifiers.OpponentLeftRoomEarly)
+        else if(signifier == ServerToClientSignifiers.GameIsOver)
         {
-            ticTacToeManager.GetComponent<TicTacToeManager>().OnGameOver("Oh no, the opponent left the game. uhhhh. You win!");
-        }
-        else if (signifier == ServerToClientSignifiers.OpponentWonTicTacToe)
-        {
-            ticTacToeManager.GetComponent<TicTacToeManager>().OnGameOver("Game Over. You lost");
-        }
-        else if(signifier == ServerToClientSignifiers.GameTied)
-        {
-            ticTacToeManager.GetComponent<TicTacToeManager>().OnGameOver("No squares left. You tied");
+            ticTacToeManager.GetComponent<TicTacToeManager>().OnGameOver(csv[1]);
         }
         else if(signifier == ServerToClientSignifiers.ChatLogMessage)
         {
             chatBox.GetComponent<ChatBoxBehaviour>().AddChatMessage(csv[1], false);
+        }
+        else if(signifier == ServerToClientSignifiers.EnteredGameRoomAsObserver)
+        { // passes signifier, room number, then csv of all the turns so far
+            TicTacToeManager ticTackToe =  ticTacToeManager.GetComponent<TicTacToeManager>();
+            gameSystemManager.GetComponent<GameSystemManager>().ChangeState(GameStates.TicTacToe);
+            ticTackToe.SetRoomNumberText(csv[1]);
+
+            string[] takenSquares = new string[csv.Length - 2];
+
+            for(int i = 2; i < csv.Length; i++)
+            {
+                takenSquares[i-2] = csv[i];
+            }
+
+            ticTackToe.EnterGameAsObserver(takenSquares);
         }
     }
 
@@ -174,10 +182,13 @@ public static class ClientToServerSignifiers
     public const int JoinGameRoomQueue = 3;
 
     public const int SelectedTicTacToeSquare = 4;
-    public const int WonTicTacToe = 5;
-    public const int GameTied = 6;
-    public const int LeavingGameRoom = 7;
+
     public const int ChatLogMessage = 8;
+
+    public const int JoinAnyRoomAsObserver = 9;
+    public const int JoinSpecificRoomAsObserver = 10;
+
+    public const int EndingTheGame = 11;
 }
 
 public static class ServerToClientSignifiers
@@ -192,9 +203,11 @@ public static class ServerToClientSignifiers
 
     public const int ChosenAsPlayerOne = 6;
     public const int OpponentChoseASquare = 7;
-    public const int OpponentLeftRoomEarly = 8;
-    public const int OpponentWonTicTacToe = 9;
-    public const int GameTied = 10;
+
     public const int ChatLogMessage = 11;
+
+    public const int EnteredGameRoomAsObserver = 12;
+
+    public const int GameIsOver = 13;
 }
 

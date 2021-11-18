@@ -20,8 +20,10 @@ public class TicTacToeManager : MonoBehaviour
 
     const int three = 3;
 
+    int turnCount = 0;
+
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         ticTacToeSquares = new List<TicTacToeSquareBehaviour>(GetComponentsInChildren<TicTacToeSquareBehaviour>());
 
@@ -46,22 +48,37 @@ public class TicTacToeManager : MonoBehaviour
                 oButton = go;
             else if(go.name == "RoomNumberText")
                 roomNumberText = go;
+
         }
 
+        xButton.GetComponent<Button>().onClick.AddListener(XButtonPressed);
+        oButton.GetComponent<Button>().onClick.AddListener(OButtonPressed);
+       
+    }
 
-        turnIndicatorText.SetActive(false);
-        if(isObserver)
-        {
-            characterSelectionPanel.SetActive(false);
-            opponentSymbolText.SetActive(false);
-            playerSymbolText.GetComponent<Text>().text = "You Are: Observing";
-        }
-        else
-        {
+    private void OnEnable()
+    {
+        if(ticTacToeSquares != null)
+            foreach (TicTacToeSquareBehaviour square in ticTacToeSquares)
+            {
+                square.OnSquarePressed += OnTicTacToeSquarePressed;
+            }
+        if(xButton != null)
             xButton.GetComponent<Button>().onClick.AddListener(XButtonPressed);
+        if(oButton != null)
             oButton.GetComponent<Button>().onClick.AddListener(OButtonPressed);
-        }
-
+    }
+    private void OnDisable()
+    {
+        if (ticTacToeSquares != null)
+            foreach (TicTacToeSquareBehaviour square in ticTacToeSquares)
+            {
+                square.OnSquarePressed -= OnTicTacToeSquarePressed;
+            }
+        if (xButton != null)
+            xButton.GetComponent<Button>().onClick.RemoveListener(XButtonPressed);
+        if (oButton != null)
+            oButton.GetComponent<Button>().onClick.RemoveListener(OButtonPressed);
     }
 
 
@@ -105,11 +122,10 @@ public class TicTacToeManager : MonoBehaviour
         if(rowCount == three || colCount == three || diagonal1Count == three || diagonal2Count == three)
         {
             //win
-            connectionToHost.SendMessageToHost(ClientToServerSignifiers.WonTicTacToe + "");
             OnGameOver("You Won!");
+            connectionToHost.SendMessageToHost(ClientToServerSignifiers.EndingTheGame + "," + "Game over, you lost");
         }
         
-        print("rows: " + rowCount + "  col: " + colCount + "  ur-bl: " + diagonal1Count + "  tr-bl: " + diagonal2Count );
     }
 
     public void OpponentTookTurn(int squareID)
@@ -125,16 +141,20 @@ public class TicTacToeManager : MonoBehaviour
             isPlayersTurn = true;
             turnIndicatorText.GetComponent<Text>().text = "It's your turn";
         }
+        else
+        {
+            ObserverChangeSquare(squareID);
+        }
     }
 
     public void OnGameOver(string endingMsg)
     {
-        isPlayersTurn = false;
-        isGameOver = true;
         turnIndicatorText.GetComponent<Text>().text = endingMsg;
 
+        if(isObserver)
+            turnIndicatorText.GetComponent<Text>().text = "the game has ended";
         //enable ui for replay
-        
+        ChangeState(TicTacToeStates.GameOver);
     }
 
     public void SetNetworkConnection(NetworkedClient networkClient)
@@ -160,9 +180,6 @@ public class TicTacToeManager : MonoBehaviour
         playerSymbolText.GetComponent<Text>().text = "You Are: " + symbol;
         opponentSymbolText.GetComponent<Text>().text = "Opponent is: " + otherSymbol;
 
-        oButton.GetComponent<Button>().onClick.RemoveAllListeners();
-        xButton.GetComponent<Button>().onClick.RemoveAllListeners();
-
         characterSelectionPanel.SetActive(false);
         turnIndicatorText.SetActive(true);
 
@@ -180,17 +197,6 @@ public class TicTacToeManager : MonoBehaviour
         turnIndicatorText.GetComponent<Text>().text = "It's your turn";
     }
 
-    //unsubscribe from events and delegates
-    private void OnDisable()
-    {
-        if(ticTacToeSquares != null)
-        {
-            foreach (TicTacToeSquareBehaviour square in ticTacToeSquares)
-            {
-                square.OnSquarePressed -= OnTicTacToeSquarePressed;
-            }
-        }
-    }
 
     private void CheckForTie()
     {
@@ -203,7 +209,7 @@ public class TicTacToeManager : MonoBehaviour
 
         if(takenTileCount >= 9 && isGameOver == false)
         {
-            connectionToHost.SendMessageToHost(ClientToServerSignifiers.GameTied + "");
+            connectionToHost.SendMessageToHost(ClientToServerSignifiers.EndingTheGame + "," + "No Squares Left. You tied");
             OnGameOver("No squares left. You tied");
         }
     }
@@ -213,4 +219,78 @@ public class TicTacToeManager : MonoBehaviour
         roomNumberText.GetComponent<Text>().text = "Room: " + roomNumber;
     }
 
+    public void EnterGameAsObserver(string[] csv_TurnsSoFar)
+    {
+        ChangeState(TicTacToeStates.Observing);
+
+        //update already taken squares
+        foreach(string index in csv_TurnsSoFar)
+        {
+            int squareIndex = int.Parse(index);
+            ObserverChangeSquare(squareIndex);
+        }
+    }
+
+    void ObserverChangeSquare(int squareID)
+    {
+        if (turnCount++ % 2 == 0)
+            ticTacToeSquares[squareID].ClaimSquare(playerIcon);
+        else
+            ticTacToeSquares[squareID].ClaimSquare(opponentIcon);
+    }
+
+    private void ResetGameState()
+    {
+        playerSymbolText.GetComponent<Text>().text = "You Are: " ;
+        opponentSymbolText.GetComponent<Text>().text = "Opponent is: " ;
+
+        foreach (TicTacToeSquareBehaviour s in ticTacToeSquares)
+        {
+            s.ResetSquare();
+        }
+        turnIndicatorText.SetActive(false);
+        turnCount = 0;
+    }
+
+    public void ChangeState(int state)
+    {
+        isPlayersTurn = false;
+
+        if(state == TicTacToeStates.StartingGame)
+        {
+            ResetGameState();
+           
+            isGameOver = false;
+            opponentSymbolText.SetActive(true);
+            characterSelectionPanel.SetActive(true);
+
+            isObserver = false;
+        }
+        else if(state == TicTacToeStates.Observing)
+        {
+            ResetGameState();
+            playerIcon = "X";
+            opponentIcon = "O";
+            opponentSymbolText.SetActive(false);
+            characterSelectionPanel.SetActive(false);
+
+            playerSymbolText.GetComponent<Text>().text = "You Are: Observing";
+
+            isObserver = true;
+        }
+        else if(state == TicTacToeStates.GameOver)
+        {
+            isGameOver = true;
+            turnIndicatorText.SetActive(true);
+            //enable replay 
+        }
+    }
+}
+
+
+public class TicTacToeStates
+{
+    public const int StartingGame = 1;
+    public const int Observing = 2;
+    public const int GameOver = 3;
 }

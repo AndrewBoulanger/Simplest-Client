@@ -17,6 +17,7 @@ public class TicTacToeSquareBehaviour : MonoBehaviour
     public delegate void SquarePressedDelegate(TicTacToeSquareBehaviour squarePressed);
     public event SquarePressedDelegate OnSquarePressed;
 
+
     private void Start()
     {
         GetComponent<Button>().onClick.AddListener(OnPressed);
@@ -41,4 +42,10 @@ public class TicTacToeSquareBehaviour : MonoBehaviour
         GetComponentInChildren<Text>().text = icon;
     }
 
+    public void ResetSquare()
+    {
+        this.icon = "";
+        isSquareTaken = false;
+        GetComponentInChildren<Text>().text = "";
+    }
 }
