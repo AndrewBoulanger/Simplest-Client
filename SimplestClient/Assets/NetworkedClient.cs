@@ -164,6 +164,16 @@ public class NetworkedClient : MonoBehaviour
 
             ticTackToe.EnterGameAsObserver(takenSquares);
         }
+        else if(signifier == ServerToClientSignifiers.TurnData)
+        {
+            string[] turns = new string[csv.Length - 1];
+
+            for (int i = 1; i < csv.Length; i++)
+            {
+                turns[i - 1] = csv[i];
+            }
+            ticTacToeManager.GetComponent<TicTacToeManager>().SetTurnData(turns);
+        }
     }
 
     public bool IsConnected()
@@ -190,6 +200,8 @@ public static class ClientToServerSignifiers
 
     public const int EndingTheGame = 11;
     public const int LeaveTheRoom = 12;
+
+    public const int RequestTurnData = 14;
 }
 
 public static class ServerToClientSignifiers
@@ -210,5 +222,7 @@ public static class ServerToClientSignifiers
     public const int EnteredGameRoomAsObserver = 12;
 
     public const int GameIsOver = 13;
+
+    public const int TurnData = 14;
 }
 

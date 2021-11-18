@@ -6,7 +6,7 @@ using System;
 
 public class TicTacToeManager : MonoBehaviour
 {
-    GameObject playerSymbolText,opponentSymbolText, turnIndicatorText, characterSelectionPanel, xButton, oButton, roomNumberText;
+    GameObject playerSymbolText,opponentSymbolText, turnIndicatorText, characterSelectionPanel, xButton, oButton, roomNumberText, previousButton, nextButton;
 
     NetworkedClient connectionToHost;
     
@@ -17,10 +17,21 @@ public class TicTacToeManager : MonoBehaviour
     bool isPlayersTurn = false;
     bool isGameOver = false;
     bool isObserver = false;
+    bool wasPlayerOne = false;
+    int roomNumber;
+
+    string[] turns;
 
     const int three = 3;
 
     int turnCount = 0;
+
+    public void SetTurnData(string[] data)
+    {
+        turns = data;
+        turnCount = data.Length;
+    }
+
 
     // Start is called before the first frame update
     void Awake()
@@ -48,37 +59,17 @@ public class TicTacToeManager : MonoBehaviour
                 oButton = go;
             else if(go.name == "RoomNumberText")
                 roomNumberText = go;
+            else if(go.name == "PreviousButton")
+                previousButton = go;
+            else if(go.name == "NextButton")
+                nextButton = go;
 
         }
 
         xButton.GetComponent<Button>().onClick.AddListener(XButtonPressed);
         oButton.GetComponent<Button>().onClick.AddListener(OButtonPressed);
-       
-    }
-
-    private void OnEnable()
-    {
-        if(ticTacToeSquares != null)
-            foreach (TicTacToeSquareBehaviour square in ticTacToeSquares)
-            {
-                square.OnSquarePressed += OnTicTacToeSquarePressed;
-            }
-        if(xButton != null)
-            xButton.GetComponent<Button>().onClick.AddListener(XButtonPressed);
-        if(oButton != null)
-            oButton.GetComponent<Button>().onClick.AddListener(OButtonPressed);
-    }
-    private void OnDisable()
-    {
-        if (ticTacToeSquares != null)
-            foreach (TicTacToeSquareBehaviour square in ticTacToeSquares)
-            {
-                square.OnSquarePressed -= OnTicTacToeSquarePressed;
-            }
-        if (xButton != null)
-            xButton.GetComponent<Button>().onClick.RemoveListener(XButtonPressed);
-        if (oButton != null)
-            oButton.GetComponent<Button>().onClick.RemoveListener(OButtonPressed);
+        nextButton.GetComponent<Button>().onClick.AddListener(NextButtonPressed);
+        previousButton.GetComponent<Button>().onClick.AddListener(PreviousButtonPressed);
     }
 
 
@@ -143,7 +134,7 @@ public class TicTacToeManager : MonoBehaviour
         }
         else
         {
-            ObserverChangeSquare(squareID);
+            MatchSquareToTurnData(squareID);
         }
     }
 
@@ -172,6 +163,23 @@ public class TicTacToeManager : MonoBehaviour
         CharacterSelected("O", "X");
     }
 
+    void NextButtonPressed()
+    {
+        if(turnCount < turns.Length)
+        { 
+            MatchSquareToTurnData(int.Parse(turns[turnCount]));
+        }
+    }
+
+    void PreviousButtonPressed()
+    {
+        if(turnCount > 0)
+        {
+            turnCount--;
+            ticTacToeSquares[int.Parse(turns[turnCount])].ResetSquare();
+        }
+    }
+
     void CharacterSelected(string symbol, string otherSymbol)
     {
         playerIcon = symbol;
@@ -195,6 +203,7 @@ public class TicTacToeManager : MonoBehaviour
     {
         isPlayersTurn = true;
         turnIndicatorText.GetComponent<Text>().text = "It's your turn";
+        wasPlayerOne = true;
     }
 
 
@@ -216,6 +225,7 @@ public class TicTacToeManager : MonoBehaviour
 
     public void SetRoomNumberText(string roomNumber)
     {
+        this.roomNumber = int.Parse(roomNumber);
         roomNumberText.GetComponent<Text>().text = "Room: " + roomNumber;
     }
 
@@ -227,20 +237,31 @@ public class TicTacToeManager : MonoBehaviour
         foreach(string index in csv_TurnsSoFar)
         {
             int squareIndex = int.Parse(index);
-            ObserverChangeSquare(squareIndex);
+            MatchSquareToTurnData(squareIndex);
         }
 
         if(isGameOver)
             ChangeState(TicTacToeStates.GameOver);
     }
 
-    void ObserverChangeSquare(int squareID)
+    void MatchSquareToTurnData(int squareID)
     {
-        if (turnCount++ % 2 == 0)
-            ticTacToeSquares[squareID].ClaimSquare(playerIcon);
+        if(wasPlayerOne)
+        {
+            if (turnCount++ % 2 == 0)
+                ticTacToeSquares[squareID].ClaimSquare(playerIcon);
+            else
+                ticTacToeSquares[squareID].ClaimSquare(opponentIcon);
+        }
         else
-            ticTacToeSquares[squareID].ClaimSquare(opponentIcon);
+        {
+            if (turnCount++ % 2 == 1)
+                ticTacToeSquares[squareID].ClaimSquare(playerIcon);
+            else
+                ticTacToeSquares[squareID].ClaimSquare(opponentIcon);
+        }
     }
+
 
     public bool IsSafeToLeaveTheRoom()
     {
@@ -256,7 +277,7 @@ public class TicTacToeManager : MonoBehaviour
         {
             s.ResetSquare();
         }
-        turnIndicatorText.GetComponent<Text>().text = "It's you're opponent's turn";
+        turnIndicatorText.GetComponent<Text>().text = "It's your opponent's turn";
         turnIndicatorText.SetActive(false);
         turnCount = 0;
     }
@@ -264,6 +285,8 @@ public class TicTacToeManager : MonoBehaviour
     public void ChangeState(int state)
     {
         isPlayersTurn = false;
+        nextButton.SetActive(false);
+        previousButton.SetActive(false);
 
         if(state == TicTacToeStates.StartingGame)
         {
@@ -289,9 +312,12 @@ public class TicTacToeManager : MonoBehaviour
         }
         else if(state == TicTacToeStates.GameOver)
         {
+            connectionToHost.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.RequestTurnData + "," + roomNumber);
             isGameOver = true;
             turnIndicatorText.SetActive(true);
             //enable replay 
+            nextButton.SetActive(true);
+            previousButton.SetActive(true);
         }
     }
 }
