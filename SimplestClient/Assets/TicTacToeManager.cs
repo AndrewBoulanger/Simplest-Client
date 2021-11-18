@@ -229,6 +229,9 @@ public class TicTacToeManager : MonoBehaviour
             int squareIndex = int.Parse(index);
             ObserverChangeSquare(squareIndex);
         }
+
+        if(isGameOver)
+            ChangeState(TicTacToeStates.GameOver);
     }
 
     void ObserverChangeSquare(int squareID)
@@ -237,6 +240,11 @@ public class TicTacToeManager : MonoBehaviour
             ticTacToeSquares[squareID].ClaimSquare(playerIcon);
         else
             ticTacToeSquares[squareID].ClaimSquare(opponentIcon);
+    }
+
+    public bool IsSafeToLeaveTheRoom()
+    {
+        return (isObserver || isGameOver);
     }
 
     private void ResetGameState()
@@ -248,6 +256,7 @@ public class TicTacToeManager : MonoBehaviour
         {
             s.ResetSquare();
         }
+        turnIndicatorText.GetComponent<Text>().text = "It's you're opponent's turn";
         turnIndicatorText.SetActive(false);
         turnCount = 0;
     }

@@ -189,6 +189,7 @@ public static class ClientToServerSignifiers
     public const int JoinSpecificRoomAsObserver = 10;
 
     public const int EndingTheGame = 11;
+    public const int LeaveTheRoom = 12;
 }
 
 public static class ServerToClientSignifiers

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class GameSystemManager : MonoBehaviour
 {
     
-    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, observerButton, titleText, ticTacToeWindow, logInWindow, roomNumInput ;
+    GameObject submitButton, userNameInput, passwordInput, toggle, ConnectionToHost, gameRoomButton, observerButton, titleText, ticTacToeWindow, logInWindow, roomNumInput, leaveRoomButton ;
     bool isNewUser = false;
 
     // Start is called before the first frame update
@@ -39,12 +39,15 @@ public class GameSystemManager : MonoBehaviour
                 observerButton = go;
             else if(go.name == "RoomNumInputField")
                 roomNumInput = go;
+            else if(go.name == "LeaveRoomButton")
+                leaveRoomButton = go;
         }
 
         submitButton.GetComponent<Button>().onClick.AddListener(SubmitButtonPressed);
         gameRoomButton.GetComponent<Button>().onClick.AddListener(GameRoomButtonPressed);
         toggle.GetComponent<Toggle>().onValueChanged.AddListener(NewUserTogglePressed);
         observerButton.GetComponent<Button>().onClick.AddListener(GameRoomAsObserverButtonPressed);
+        leaveRoomButton.GetComponent<Button>().onClick.AddListener(LeaveRoomButtonPressed);
 
         ChangeState(GameStates.LoginMenu);
     }
@@ -102,6 +105,15 @@ public class GameSystemManager : MonoBehaviour
         input.text = "";
     }
 
+    void LeaveRoomButtonPressed()
+    {
+        if(ticTacToeWindow.activeInHierarchy && ticTacToeWindow.GetComponent<TicTacToeManager>().IsSafeToLeaveTheRoom() == false)
+            ConnectionToHost.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.EndingTheGame + "," + "Opponent Left Early");
+        
+        ConnectionToHost.GetComponent<NetworkedClient>().SendMessageToHost(ClientToServerSignifiers.LeaveTheRoom + "");
+        ChangeState(GameStates.MainMenu);
+    }
+
     public void ChangeState(int state)
     {
         userNameInput.SetActive(false);
@@ -112,6 +124,7 @@ public class GameSystemManager : MonoBehaviour
         titleText.SetActive(false);
         observerButton.SetActive(false);
         roomNumInput.SetActive(false);
+        leaveRoomButton.SetActive(false);
 
         ticTacToeWindow.SetActive(false);
         logInWindow.SetActive(false);
@@ -135,11 +148,13 @@ public class GameSystemManager : MonoBehaviour
         else if (state == GameStates.WaitingInQueueForOtherPlayer)
         {
             logInWindow.SetActive(true);
+            leaveRoomButton.SetActive(true);
         }
         else if(state == GameStates.TicTacToe)
         {
             ticTacToeWindow.SetActive(true);
             ticTacToeWindow.GetComponent<TicTacToeManager>().SetNetworkConnection(ConnectionToHost.GetComponent<NetworkedClient>());
+            leaveRoomButton.SetActive(true);
         }
 
 
